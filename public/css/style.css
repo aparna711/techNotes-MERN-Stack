@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;  /* Default value in browser is box-sizing: content-box;  */
+}
+
+html {
+    font-family: 'Share Tech Mono', monospace; /*Imported font , Fall back fonts */
+    font-size: 2.5rem;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #000;
+    color: whitesmoke;
+    display: grid;
+    place-content: center;
+
+    /* Using flex 
+    display: flex;
+    justify-contents:center;
+    align-items:center;
+    */
+    padding: 1rem;
+}
+
+.logo {
+  width: 60px;
+  height: auto;   /* keeps aspect ratio */
+  margin-right: 10px;
+}
+header {
+  display: flex;
+  align-items: center;
+}
