@@ -4,24 +4,37 @@ const asyncHandler = require('express-async-handler');
 //@method GET /notes
 //@access PRIVATE
 
-const getAllNotes =asyncHandler( async(req,res) => {
-    const notes = await Note.find().lean().exec();
-    if(!notes.length){
-        return res.status(200).json({message:"No notes found"})
-    }
-    res.json(notes)
-}
-);
+const getAllNotes = asyncHandler(async (req, res) => {
+    // Get all notes from MongoDB
+    const notes = await Note.find().lean()
 
+    // If no notes 
+    if (!notes?.length) {
+        return res.status(200).json({ message: 'No notes found' })
+    }
+
+    // Add username to each note before sending the response 
+    // See Promise.all with map() here: https://youtu.be/4lqJBBEpjRE 
+    // You could also do this with a for...of loop
+    const notesWithUser = await Promise.all(notes.map(async (note) => {
+        const user = await User.findById(note.user).lean().exec()
+        return { ...note, username: user.username }
+    }))
+
+    res.json(notesWithUser)
+})
 //@dec Get a specfic note
 //@method GET /notes/:id
 //@access PRIVATE
 const getUserNoteById = asyncHandler(async(req,res)=>{
-    const userId = req.params.id;
-    note = await Note.findOne({userId}).lean().exec();
+    const user = req.params.id;
+    note = await Note.findOne({user}).lean().exec();
     if(!note){
         return res.status(200).json({message:`No Note is Assigned to UserId ${userId}`});
     }
+    const noteUser = await Note.findById(note.user).lean().exec();
+    const noteWithUser = {...note, username: noteUser.username }
+    res.json(noteWithUser);
 });
 
 //@dec Create a New Note
@@ -29,18 +42,23 @@ const getUserNoteById = asyncHandler(async(req,res)=>{
 //@access PRIVATE
 
 const createNewNote = asyncHandler(async(req,res) =>{
-    const {userId, title, text } = req.body;
+    const {user, title, text } = req.body;
     //Confirm data
-    if(!userId || !title || !text || !completed ){
+    if(!user || !title || !text  ){
         return res.status(404).json({message:'All fields are required'});
     }
     //Duplicate Data
-    const duplicate = await Note.findOne({userId}).lean().exec();
+    const duplicate = await Note.findOne({title}).lean().exec();
     if (duplicate){
-        res.status(409).json({message:'Duplicate username found. \n Note cannot be inserted '});
+        res.status(409).json({message:'Duplicate title found. \n Note cannot be inserted '});
     }
-    const result = await Note.create({userId, title, text});
-    res.json(`Note created successfully ! ${result}`);
+    const result = await Note.create({user, title, text});
+   if (note) { // Created 
+        return res.status(201).json({ message: 'New note created' })
+    } 
+    else {
+        return res.status(400).json({ message: 'Invalid note data received' })
+    }
 });
 
 //@dec Get all notes
@@ -48,41 +66,48 @@ const createNewNote = asyncHandler(async(req,res) =>{
 //@access PRIVATE
 
 const updateNote = asyncHandler(async(req,res) =>{
-    const {_id, userId, title, text ,completed} =req.body;
+    const {_id, user, title, text ,completed} =req.body;
     //Confirm Data
-    if(!_id || !userId || !title || !text || !completed){
+    if(!_id || !user || !title || !text || typeof completed != 'boolean'){
         return res.status(404).json({message : 'All fields are required'});
     }
     //Get user
-    const note = await findById(_id).lean().exec();
-    if(!user){
-        res.status(200).json('Note not found');
+    const note = await Note.findById(_id).lean().exec();
+    if(!note){
+        res.status(200).json({message:'Note not found'});
     }
     //Check Duplicate Data
-    const duplicate = await findOne({userId})
+    const duplicate = await Note.findOne({title})
     if (duplicate && duplicate._id.toString() !== _id){
-        return res.status(200).json({'Duplicate Note \n Note cannot be updated'});
+        return res.status(409).json({message: 'Duplicate Note \n Note cannot be updated'});
     }
     //Update data
-    const updatedUser = await userId.save();
-    res.json(`${updatedUser.username} updated successfully`);
-})
+    //MongoDB never allows to update the _id field
+    note.user = user;
+    note.title = title;
+    note.text = text;
+    note.completed = completed;
+
+    const updatedUser = await note.save();
+    res.json(`${updatedUser.title} updated successfully`);
+});
 
 //@dec Get all notes
 //@method GET /notes
 //@access PRIVATE
 
 const deleteNote = asyncHandler(async(req,res)=>{
-     const userId = req.body;
-     const note = await Note.findById(id).lean().exec();
-     if(!note.length){
+     const {_id} = req.body;
+     const note = await Note.findById(_id).lean().exec();
+     if(!note){
         res.status(200).json({message : 'Note not found'});
      }
-     const deletedUser = await Note.deleteOne({userId});
-     res.json('Note Deleted successfully');
+     const deletedUser = await note.deleteNote();
+     const reply = `Note '${deletedUser.title} with ID '${deletedUser._id}' deleted`;
+     res.json(reply);
 });
 
-module.exposts ={
+module.exports ={
     getAllNotes,
     getUserNoteById,
     createNewNote,

@@ -18,7 +18,6 @@ const noteSchema = mongoose.Schema({
         type: Boolean,
         default: false
     }
-
 },
 {
     timestamps:true //for auto-managed timestamps

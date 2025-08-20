@@ -14,7 +14,7 @@ const getAllUsers = asyncHandler(async(req , res)=>{
         return res.status(200).json({message:"No users found !"})
     }
     res.json(users);
-})
+});
 
 //@desc Create new User
 //@route POST /users
@@ -46,14 +46,14 @@ const createNewUser = asyncHandler(async(req , res)=>{
     else{
         res.status(400).json({message: 'Invalid user data received'})
     }
-})
+});
 
 //@desc Update a User
 //@route PATCH /users
 //@access Private
 
 
-const updateUser = async (req, res) => {
+const updateUser = asyncHandler(async (req, res) => {
     const { _id, username, password, roles, active } = req.body;
 
     // 1. Validation
@@ -94,7 +94,7 @@ const updateUser = async (req, res) => {
         // =========but that still includes _id, which MongoDB doesn’t allow updating===============
 
     res.json({ message: `User ${updatedUser.username} updated successfully` });
-};
+});
 
 
 
@@ -119,11 +119,11 @@ const deleteUser = asyncHandler(async(req , res)=>{
     const result = await user.deleteOne();
     res.json({message:`User Deleted successfully ! : ${result}`})
 
-})
+});
 
 module.exports = {
     getAllUsers,
     createNewUser,
     updateUser,
     deleteUser
-}
+};
